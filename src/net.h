@@ -71,9 +71,9 @@ static const size_t SETASKFOR_MAX_SZ = 2 * MAX_INV_SZ;
 /** The maximum number of peer connections to maintain. */
 static const unsigned int DEFAULT_MAX_PEER_CONNECTIONS = 125;
 /** BU: The maximum numer of outbound peer connections */
-static const unsigned int DEFAULT_MAX_OUTBOUND_CONNECTIONS = 8;
+static const unsigned int DEFAULT_MAX_OUTBOUND_CONNECTIONS = 12;
 /** BU: The minimum number of xthin nodes to connect */
-static const uint8_t MIN_XTHIN_NODES = 4;
+static const uint8_t MIN_XTHIN_NODES = 8;
 /** BU: The daily maximum disconnects while searching for xthin nodes to connect */
 static const unsigned int MAX_DISCONNECTS = 200;
 /** The default for -maxuploadtarget. 0 = Unlimited */
@@ -346,6 +346,18 @@ public:
 class CNode
 {
 public:
+    struct CThinBlockInFlight
+    {
+        int64_t nRequestTime;
+        bool fReceived;
+
+        CThinBlockInFlight()
+        {
+            nRequestTime = GetTime();
+            fReceived = false;
+        }
+    };
+
     // socket
     uint64_t nServices;
     SOCKET hSocket;
@@ -408,11 +420,12 @@ public:
     CBlock thinBlock;
     std::vector<uint256> thinBlockHashes;
     std::vector<uint64_t> xThinBlockHashes;
+    std::map<uint64_t, CTransaction> mapMissingTx;
     uint64_t nLocalThinBlockBytes; // the bytes used in creating this thinblock, updated dynamically
     int nSizeThinBlock; // Original on-wire size of the block. Just used for reporting
     int thinBlockWaitingForTxns; // if -1 then not currently waiting
     CCriticalSection cs_mapthinblocksinflight; // lock mapThinBlocksInFlight
-    std::map<uint256, int64_t> mapThinBlocksInFlight; // thin blocks in flight and the time requested.
+    std::map<uint256, CThinBlockInFlight> mapThinBlocksInFlight; // thin blocks in flight and the time requested.
     double nGetXBlockTxCount; // Count how many get_xblocktx requests are made
     uint64_t nGetXBlockTxLastTime; // The last time a get_xblocktx request was made
     double nGetXthinCount; // Count how many get_xthin requests are made
